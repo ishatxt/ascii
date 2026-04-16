@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASCII.FORGE — Image to Art Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #030307;
+  --bg2:      #07080f;
+  --bg3:      #0b0c18;
+  --bg4:      #11131f;
+  --border:   #181929;
+  --border2:  #252740;
+  --neon:     #00ff88;
+  --neon2:    rgba(0,255,136,0.12);
+  --neon3:    rgba(0,255,136,0.05);
+  --cyan:     #00c8ff;
+  --cyan2:    rgba(0,200,255,0.12);
+  --magenta:  #ff2fff;
+  --mag2:     rgba(255,47,255,0.08);
+  --amber:    #ffbb00;
+  --text:     #b8bcd6;
+  --text2:    #6870a0;
+  --text3:    #3a3d5c;
+  --danger:   #ff3355;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{
+  height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Scanline overlay */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    0deg,transparent,transparent 3px,
+    rgba(0,0,0,0.06) 3px,rgba(0,0,0,0.06) 4px
+  );
+  pointer-events:none;z-index:9999;
+}
+
+/* Vignette */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.6) 100%);
+  pointer-events:none;z-index:9998;
+}
+
+/* ─── APP SHELL ─── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ─── HEADER ─── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;height:54px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;position:relative;z-index:50;
+}
+header::before{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--neon),transparent);
+  opacity:0.4;
+}
+
+.logo{
+  font-family:'Orbitron',monospace;
+  font-size:1.1rem;font-weight:900;
+  letter-spacing:0.12em;
+  color:var(--neon);
+  text-shadow:0 0 20px var(--neon),0 0 50px rgba(0,255,136,0.25);
+  position:relative;user-select:none;
+}
+.logo .dot{color:var(--cyan);text-shadow:0 0 15px var(--cyan);}
+.logo .sub{
+  font-size:0.45rem;font-weight:400;letter-spacing:0.3em;
+  color:var(--text2);display:block;margin-top:-2px;text-shadow:none;
+}
+
+.logo-glitch{
+  position:relative;display:inline-block;
+}
+.logo-glitch::before,.logo-glitch::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;width:100%;height:100%;
+}
+.logo-glitch::before{
+  color:var(--cyan);
+  animation:glitch1 4s infinite;clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%);
+}
+.logo-glitch::after{
+  color:var(--magenta);
+  animation:glitch2 4s infinite;clip-path:polygon(0 60%,100% 60%,100% 75%,0 75%);
+}
+@keyframes glitch1{
+  0%,89%,96%,100%{transform:none;opacity:0}
+  90%{transform:translateX(-3px);opacity:0.8}
+  92%{transform:translateX(2px);opacity:0.6}
+  94%{transform:none;opacity:0}
+}
+@keyframes glitch2{
+  0%,91%,98%,100%{transform:none;opacity:0}
+  92%{transform:translateX(3px);opacity:0.7}
+  95%{transform:translateX(-1px);opacity:0.5}
+  97%{transform:none;opacity:0}
+}
+
+.header-right{display:flex;gap:8px;align-items:center}
+
+/* ─── BUTTONS ─── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;
+  border:1px solid;border-radius:3px;
+  font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;
+  cursor:pointer;transition:all 0.2s;
+  text-transform:uppercase;letter-spacing:0.08em;white-space:nowrap;
+  text-decoration:none;
+}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+
+.btn-neon{background:var(--neon2);border-color:rgba(0,255,136,0.4);color:var(--neon)}
+.btn-neon:hover{background:rgba(0,255,136,0.2);border-color:var(--neon);box-shadow:0 0 20px rgba(0,255,136,0.2),inset 0 0 10px var(--neon3)}
+
+.btn-cyan{background:var(--cyan2);border-color:rgba(0,200,255,0.4);color:var(--cyan)}
+.btn-cyan:hover{background:rgba(0,200,255,0.2);border-color:var(--cyan);box-shadow:0 0 20px rgba(0,200,255,0.2)}
+
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--text);color:var(--text)}
+
+.btn-danger{background:rgba(255,51,85,0.08);border-color:rgba(255,51,85,0.3);color:var(--danger)}
+.btn-danger:hover{background:rgba(255,51,85,0.15);border-color:var(--danger)}
+
+.btn:disabled{opacity:0.35;cursor:not-allowed;pointer-events:none}
+
+.mobile-only{display:none}
+
+/* ─── MAIN ─── */
+.main{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ─── CANVAS AREA ─── */
+.canvas-area{
+  flex:1;min-width:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:auto;background:var(--bg);position:relative;
+  padding:24px;
+}
+.canvas-area::-webkit-scrollbar{width:6px;height:6px}
+.canvas-area::-webkit-scrollbar-track{background:transparent}
+.canvas-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.drop-zone{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:20px;
+  border:2px dashed var(--border2);border-radius:8px;
+  padding:60px 40px;width:100%;max-width:520px;
+  cursor:pointer;transition:all 0.3s;text-align:center;
+  background:var(--neon3);
+}
+.drop-zone:hover,.drop-zone.drag-over{
+  border-color:var(--neon);background:var(--neon2);
+  box-shadow:0 0 40px var(--neon3),inset 0 0 40px var(--neon3);
+}
+.drop-zone .dz-icon{
+  width:64px;height:64px;
+  border:2px solid var(--border2);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--neon);font-size:1.4rem;
+  transition:all 0.3s;
+}
+.drop-zone:hover .dz-icon{border-color:var(--neon);box-shadow:0 0 20px var(--neon3)}
+.drop-zone h2{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--text);letter-spacing:0.1em}
+.drop-zone p{font-size:0.68rem;color:var(--text2)}
+
+#output-canvas{
+  display:none;
+  max-width:100%;
+  border:1px solid var(--border2);
+  image-rendering:pixelated;
+  box-shadow:0 0 0 1px var(--border),0 20px 60px rgba(0,0,0,0.6),0 0 80px rgba(0,255,136,0.04);
+}
+
+/* Processing overlay */
+.processing-bar{
+  position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--neon),var(--cyan),var(--neon));
+  background-size:200% 100%;
+  animation:shimmer 1.2s linear infinite;
+  display:none;z-index:10;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:290px;flex-shrink:0;
+  background:var(--bg2);
+  border-left:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;
+  position:relative;
+}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.panel-section{
+  padding:16px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.panel-section:last-child{border-bottom:none}
+
+.section-label{
+  font-family:'Orbitron',monospace;
+  font-size:0.52rem;font-weight:700;letter-spacing:0.2em;
+  color:var(--text3);text-transform:uppercase;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{
+  content:'';flex:1;height:1px;background:var(--border2);
+}
+
+/* PRESETS */
+.preset-grid{display:flex;flex-wrap:wrap;gap:5px}
+.preset-pill{
+  padding:4px 9px;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:3px;
+  color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:0.62rem;
+  cursor:pointer;transition:all 0.15s;
+}
+.preset-pill:hover{border-color:var(--cyan);color:var(--cyan)}
+.preset-pill.active{background:var(--cyan2);border-color:var(--cyan);color:var(--cyan)}
+
+/* CONTROLS */
+.ctrl-row{margin-bottom:12px}
+.ctrl-row:last-child{margin-bottom:0}
+
+.ctrl-label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:0.65rem;color:var(--text);margin-bottom:6px;
+}
+.ctrl-label .val{color:var(--neon);font-weight:700;font-size:0.7rem;min-width:28px;text-align:right}
+
+input[type="text"],select,textarea{
+  width:100%;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:3px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.72rem;
+  padding:8px 10px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+}
+input[type="text"]:focus,select:focus{
+  border-color:rgba(0,255,136,0.5);
+  box-shadow:0 0 10px var(--neon3);
+}
+select{appearance:none;cursor:pointer}
+
+/* Slider */
+input[type="range"]{
+  width:100%;-webkit-appearance:none;appearance:none;
+  height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--neon);cursor:pointer;
+  box-shadow:0 0 8px var(--neon),0 0 0 2px var(--bg);
+  transition:box-shadow 0.2s,transform 0.2s;
+}
+input[type="range"]::-webkit-slider-thumb:hover{box-shadow:0 0 16px var(--neon),0 0 0 2px var(--bg)}
+input[type="range"]:active::-webkit-slider-thumb{transform:scale(1.2)}
+input[type="range"]::-moz-range-thumb{
+  width:14px;height:14px;border:none;border-radius:50%;
+  background:var(--neon);cursor:pointer;
+  box-shadow:0 0 8px var(--neon);
+}
+
+/* Toggle buttons */
+.toggle-row{display:flex;gap:4px;margin-bottom:10px}
+.toggle-btn{
+  flex:1;padding:7px 4px;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:3px;
+  color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+  cursor:pointer;transition:all 0.15s;text-align:center;text-transform:uppercase;
+  letter-spacing:0.05em;
+}
+.toggle-btn:hover{border-color:var(--border);color:var(--text)}
+.toggle-btn.active{background:var(--neon2);border-color:rgba(0,255,136,0.5);color:var(--neon)}
+
+/* Switch */
+.switch-row{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:0.65rem;color:var(--text);margin-bottom:9px;
+  padding:4px 0;
+}
+.switch-row:last-child{margin-bottom:0}
+label.switch{position:relative;width:38px;height:21px;flex-shrink:0;cursor:pointer}
+label.switch input{display:none}
+.sw-track{
+  position:absolute;inset:0;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:11px;
+  transition:all 0.2s;
+}
+.sw-thumb{
+  position:absolute;width:15px;height:15px;top:2px;left:2px;
+  background:var(--text3);border-radius:50%;transition:all 0.2s;
+}
+label.switch input:checked~.sw-track{background:var(--neon2);border-color:rgba(0,255,136,0.5)}
+label.switch input:checked~.sw-thumb{left:19px;background:var(--neon);box-shadow:0 0 8px var(--neon)}
+
+/* Color pickers */
+.color-row{display:flex;gap:8px}
+.color-group{flex:1}
+.color-group-label{font-size:0.6rem;color:var(--text2);margin-bottom:4px}
+input[type="color"]{
+  width:100%;height:34px;padding:2px;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:3px;
+  cursor:pointer;transition:border-color 0.2s;
+}
+input[type="color"]:hover{border-color:var(--neon)}
+
+/* Export */
+.export-stack{display:flex;flex-direction:column;gap:7px}
+
+/* ─── STATUS BAR ─── */
+.statusbar{
+  height:28px;padding:0 20px;
+  background:var(--bg2);border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:0.6rem;color:var(--text3);flex-shrink:0;
+}
+.status-indicator{
+  display:flex;align-items:center;gap:8px;
+}
+.status-dot{
+  width:5px;height:5px;border-radius:50%;background:var(--neon);
+  animation:pulse 2.5s ease-in-out infinite;
+  box-shadow:0 0 5px var(--neon);
+}
+@keyframes pulse{
+  0%,100%{opacity:1;box-shadow:0 0 5px var(--neon)}
+  50%{opacity:0.4;box-shadow:none}
+}
+.status-right{color:var(--text3)}
+
+/* ─── MOBILE BOTTOM SHEET ─── */
+@media(max-width:767px){
+  .mobile-only{display:flex}
+
+  .sidebar{
+    display:none;
+    position:fixed;bottom:0;left:0;right:0;
+    width:100%;max-height:65vh;
+    border-left:none;border-top:1px solid var(--border2);
+    border-radius:14px 14px 0 0;
+    z-index:200;
+    box-shadow:0 -20px 60px rgba(0,0,0,0.7);
+    animation:slideUp 0.3s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .sidebar.open{display:flex}
+
+  .sidebar-handle{
+    display:block;
+    width:36px;height:4px;
+    background:var(--border2);border-radius:2px;
+    margin:10px auto 4px;
+    cursor:pointer;flex-shrink:0;
+  }
+
+  .canvas-area{padding:12px}
+  header{padding:0 12px}
+  .logo .sub{display:none}
+
+  .backdrop{
+    position:fixed;inset:0;z-index:190;
+    background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+  }
+}
+@media(min-width:768px){
+  .sidebar-handle{display:none}
+  .backdrop{display:none}
+}
+
+/* ─── TOOLTIP ─── */
+.tooltip{
+  position:relative;
+}
+.tooltip-text{
+  visibility:hidden;opacity:0;
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text);font-size:0.6rem;padding:5px 8px;border-radius:3px;
+  white-space:nowrap;pointer-events:none;transition:opacity 0.15s;z-index:100;
+}
+.tooltip:hover .tooltip-text{visibility:visible;opacity:1}
+
+/* ─── STATS STRIP ─── */
+.stats-strip{
+  display:flex;gap:0;flex-shrink:0;
+  border-bottom:1px solid var(--border);background:var(--bg);
+}
+.stat-cell{
+  flex:1;padding:6px 10px;text-align:center;
+  border-right:1px solid var(--border);
+}
+.stat-cell:last-child{border-right:none}
+.stat-num{font-size:0.75rem;font-weight:700;color:var(--cyan);font-family:'Orbitron',monospace}
+.stat-lbl{font-size:0.5rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase}
+
+/* ─── COPY SUCCESS FLASH ─── */
+.flash{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%);
+  background:var(--neon);color:#000;
+  font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;
+  letter-spacing:0.1em;padding:8px 20px;border-radius:3px;
+  z-index:9990;pointer-events:none;
+  animation:flashAnim 2s ease forwards;
+}
+@keyframes flashAnim{
+  0%{opacity:0;transform:translateX(-50%) translateY(-8px)}
+  15%{opacity:1;transform:translateX(-50%) translateY(0)}
+  70%{opacity:1}
+  100%{opacity:0}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <span class="logo-glitch" data-text="ASCII">ASCII</span><span class="dot">.</span>FORGE
+      <span class="sub">IMAGE → ART CONVERTER</span>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-neon" id="uploadBtn" title="Upload image">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload
+      </button>
+      <button class="btn btn-ghost mobile-only" id="controlsBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- CANVAS -->
+    <div class="canvas-area" id="canvasArea">
+      <div class="drop-zone" id="dropZone">
+        <div class="dz-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div>
+          <h2>Drop Image Here</h2>
+          <p style="margin-top:4px">PNG, JPG, GIF, WEBP, BMP — any image</p>
+        </div>
+        <button class="btn btn-neon" onclick="document.getElementById('fileInput').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Choose File
+        </button>
+        <p style="font-size:0.6rem;color:var(--text3)">or paste from clipboard with Ctrl+V</p>
+      </div>
+      <canvas id="outputCanvas"></canvas>
+      <div class="processing-bar" id="processingBar"></div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-handle" id="sidebarHandle"></div>
+
+      <!-- STATS -->
+      <div class="stats-strip" id="statsStrip" style="display:none">
+        <div class="stat-cell">
+          <div class="stat-num" id="statCols">—</div>
+          <div class="stat-lbl">Cols</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="statRows">—</div>
+          <div class="stat-lbl">Rows</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="statChars">—</div>
+          <div class="stat-lbl">Chars</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="statMs">—</div>
+          <div class="stat-lbl">ms</div>
+        </div>
+      </div>
+
+      <!-- PRESETS -->
+      <div class="panel-section">
+        <div class="section-label">Presets</div>
+        <div class="preset-grid" id="presetGrid"></div>
+      </div>
+
+      <!-- CHARACTER SET -->
+      <div class="panel-section">
+        <div class="section-label">Character Set</div>
+        <div class="ctrl-row">
+          <input type="text" id="charSet" value="@#S%?*+;:,. " placeholder="Type characters to use…" spellcheck="false">
+        </div>
+      </div>
+
+      <!-- SAMPLING -->
+      <div class="panel-section">
+        <div class="section-label">Sampling / Resolution</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">
+            Pixel Block Size
+            <span class="val" id="pixelSizeVal">10</span>
+          </div>
+          <input type="range" id="pixelSize" min="2" max="40" value="10" step="1">
+        </div>
+      </div>
+
+      <!-- COLOR MODE -->
+      <div class="panel-section">
+        <div class="section-label">Color Mode</div>
+        <div class="toggle-row" id="colorModeGroup">
+          <button class="toggle-btn active" data-mode="neon">Neon</button>
+          <button class="toggle-btn" data-mode="original">Original</button>
+          <button class="toggle-btn" data-mode="mono">Mono</button>
+        </div>
+        <div id="colorPickers">
+          <div class="color-row">
+            <div class="color-group">
+              <div class="color-group-label">Foreground</div>
+              <input type="color" id="fgColor" value="#00ff88">
+            </div>
+            <div class="color-group">
+              <div class="color-group-label">Background</div>
+              <input type="color" id="bgColor" value="#000000">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IMAGE ADJUSTMENTS -->
+      <div class="panel-section">
+        <div class="section-label">Image Adjustments</div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">Brightness <span class="val" id="brightnessVal">0</span></div>
+          <input type="range" id="brightness" min="-100" max="100" value="0" step="1">
+        </div>
+        <div class="ctrl-row">
+          <div class="ctrl-label">Contrast <span class="val" id="contrastVal">0</span></div>
+          <input type="range" id="contrast" min="-100" max="100" value="0" step="1">
+        </div>
+      </div>
+
+      <!-- EFFECTS -->
+      <div class="panel-section">
+        <div class="section-label">Effects &amp; Toggles</div>
+        <div class="switch-row">
+          <span>Invert Brightness Mapping</span>
+          <label class="switch" title="Flip dark/light character mapping">
+            <input type="checkbox" id="invertToggle">
+            <span class="sw-track"></span>
+            <span class="sw-thumb"></span>
+          </label>
+        </div>
+        <div class="switch-row">
+          <span>Edge Detection (Sobel)</span>
+          <label class="switch" title="Apply Sobel filter for line-art style">
+            <input type="checkbox" id="edgeToggle">
+            <span class="sw-track"></span>
+            <span class="sw-thumb"></span>
+          </label>
+        </div>
+        <div class="switch-row">
+          <span>Bold Characters</span>
+          <label class="switch" title="Use bold font weight">
+            <input type="checkbox" id="boldToggle">
+            <span class="sw-track"></span>
+            <span class="sw-thumb"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- FONT -->
+      <div class="panel-section">
+        <div class="section-label">Font Family</div>
+        <div class="ctrl-row">
+          <select id="fontSelect">
+            <option value="JetBrains Mono">JetBrains Mono</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Lucida Console">Lucida Console</option>
+            <option value="monospace">System Monospace</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- EXPORT -->
+      <div class="panel-section">
+        <div class="section-label">Export</div>
+        <div class="export-stack">
+          <button class="btn btn-cyan" id="copyBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy Text to Clipboard
+          </button>
+          <button class="btn btn-neon" id="downloadPNGBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PNG
+          </button>
+          <button class="btn btn-ghost" id="downloadJPGBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download JPG
+          </button>
+          <button class="btn btn-danger" id="resetBtn" style="margin-top:4px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset / New Image
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+  </div><!-- /main -->
+
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">READY — Upload an image to begin</span>
+    </div>
+    <span class="status-right" id="statusRight">ASCII.FORGE v2.0</span>
+  </div>
+
+</div><!-- /app -->
+
+<div class="backdrop" id="backdrop" style="display:none" onclick="closeSidebar()"></div>
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const S = {
+  image: null,
+  chars: '@#S%?*+;:,. ',
+  pixelSize: 10,
+  colorMode: 'neon',
+  inverted: false,
+  edgeDetection: false,
+  bold: false,
+  brightness: 0,
+  contrast: 0,
+  font: 'JetBrains Mono',
+  fgColor: '#00ff88',
+  bgColor: '#000000',
+};
+
+let rafId = null;
+let rendered = false;
+
+// ─── PRESETS ─────────────────────────────────────────────────────────────────
+const PRESETS = [
+  {label:'Classic',  chars:'@#S%?*+;:,. '},
+  {label:'Dense',    chars:'█▓▒░·  '},
+  {label:'Binary',   chars:'10 '},
+  {label:'Minimal',  chars:'●○·  '},
+  {label:'Symbols',  chars:'◈◇◆▲▽▼◉○·  '},
+  {label:'Slashes',  chars:'#/\\|=-:. '},
+  {label:'Dots',     chars:'⣿⣶⣤⡀  '},
+  {label:'Numbers',  chars:'0123456789 '},
+];
+
+const presetGrid = document.getElementById('presetGrid');
+let activePreset = null;
+
+PRESETS.forEach((p,i) => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-pill' + (i===0?' active':'');
+  btn.textContent = p.label;
+  btn.dataset.idx = i;
+  btn.onclick = () => {
+    S.chars = p.chars;
+    document.getElementById('charSet').value = p.chars;
+    document.querySelectorAll('.preset-pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    scheduleRender();
+  };
+  presetGrid.appendChild(btn);
+});
+
+// ─── BIND CONTROLS ───────────────────────────────────────────────────────────
+function bindRange(id, key, dispId) {
+  const el = document.getElementById(id);
+  const disp = document.getElementById(dispId);
+  el.oninput = () => {
+    S[key] = parseFloat(el.value);
+    if(disp) disp.textContent = el.value;
+    scheduleRender();
+  };
+}
+bindRange('pixelSize','pixelSize','pixelSizeVal');
+bindRange('brightness','brightness','brightnessVal');
+bindRange('contrast','contrast','contrastVal');
+
+document.getElementById('charSet').oninput = e => {
+  S.chars = e.target.value || ' ';
+  document.querySelectorAll('.preset-pill').forEach(b=>b.classList.remove('active'));
+  scheduleRender();
+};
+
+document.getElementById('invertToggle').onchange = e => { S.inverted=e.target.checked; scheduleRender(); };
+document.getElementById('edgeToggle').onchange   = e => { S.edgeDetection=e.target.checked; scheduleRender(); };
+document.getElementById('boldToggle').onchange   = e => { S.bold=e.target.checked; scheduleRender(); };
+document.getElementById('fontSelect').onchange   = e => { S.font=e.target.value; scheduleRender(); };
+document.getElementById('fgColor').oninput       = e => { S.fgColor=e.target.value; scheduleRender(); };
+document.getElementById('bgColor').oninput       = e => { S.bgColor=e.target.value; scheduleRender(); };
+
+document.getElementById('colorModeGroup').onclick = e => {
+  if(!e.target.dataset.mode) return;
+  document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  S.colorMode = e.target.dataset.mode;
+  const showPickers = S.colorMode !== 'original';
+  document.getElementById('colorPickers').style.opacity = showPickers ? '1' : '0.4';
+  document.getElementById('colorPickers').style.pointerEvents = showPickers ? 'auto' : 'none';
+  scheduleRender();
+};
+
+// ─── FILE LOADING ─────────────────────────────────────────────────────────────
+const fileInput = document.getElementById('fileInput');
+fileInput.onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
+document.getElementById('uploadBtn').onclick = () => fileInput.click();
+
+// Drag & drop
+const dropZone = document.getElementById('dropZone');
+const canvasArea = document.getElementById('canvasArea');
+
+['dragenter','dragover'].forEach(ev => {
+  canvasArea.addEventListener(ev, e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+});
+['dragleave','drop'].forEach(ev => {
+  canvasArea.addEventListener(ev, e => {
+    if(ev==='dragleave'&&canvasArea.contains(e.relatedTarget)) return;
+    dropZone.classList.remove('drag-over');
+  });
+});
+canvasArea.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.type.startsWith('image/')) loadFile(f);
+});
+
+// Paste from clipboard
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if(!items) return;
+  for(const item of items) {
+    if(item.type.startsWith('image/')) {
+      loadFile(item.getAsFile());
+      break;
+    }
+  }
+});
+
+function loadFile(file) {
+  setStatus('LOADING — ' + file.name + '…');
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    S.image = img;
+    dropZone.style.display = 'none';
+    document.getElementById('outputCanvas').style.display = 'block';
+    document.getElementById('statsStrip').style.display = 'flex';
+    enableExport(true);
+    setStatus('LOADED — ' + file.name + ' (' + img.naturalWidth + '×' + img.naturalHeight + ')', 'Processing…');
+    scheduleRender();
+  };
+  img.onerror = () => setStatus('ERROR — Could not load image');
+  img.src = url;
+}
+
+// ─── RESET ───────────────────────────────────────────────────────────────────
+document.getElementById('resetBtn').onclick = () => {
+  S.image = null;
+  rendered = false;
+  dropZone.style.display = '';
+  const canvas = document.getElementById('outputCanvas');
+  canvas.style.display = 'none';
+  canvas.width = 0; canvas.height = 0;
+  document.getElementById('statsStrip').style.display = 'none';
+  enableExport(false);
+  fileInput.value = '';
+  setStatus('READY — Upload an image to begin');
+};
+
+function enableExport(on) {
+  ['copyBtn','downloadPNGBtn','downloadJPGBtn'].forEach(id => {
+    document.getElementById(id).disabled = !on;
+  });
+}
+
+// ─── SOBEL EDGE DETECTION ────────────────────────────────────────────────────
+function sobelFilter(data, w, h) {
+  const mag = new Float32Array(w * h);
+  for(let y=1; y<h-1; y++) {
+    for(let x=1; x<w-1; x++) {
+      const g = i => {const p=i*4; return 0.299*data[p]+0.587*data[p+1]+0.114*data[p+2];};
+      const tl=g((y-1)*w+(x-1)), t=g((y-1)*w+x), tr=g((y-1)*w+(x+1));
+      const ml=g(y*w+(x-1)),                       mr=g(y*w+(x+1));
+      const bl=g((y+1)*w+(x-1)), b=g((y+1)*w+x), br=g((y+1)*w+(x+1));
+      const gx = -tl+tr -2*ml+2*mr -bl+br;
+      const gy = -tl-2*t-tr +bl+2*b+br;
+      mag[y*w+x] = Math.sqrt(gx*gx+gy*gy);
+    }
+  }
+  // Normalize
+  let mx=0;
+  for(let i=0;i<mag.length;i++) if(mag[i]>mx) mx=mag[i];
+  if(mx>0) for(let i=0;i<mag.length;i++) mag[i]=mag[i]/mx*255;
+  return mag;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function scheduleRender() {
+  if(!S.image) return;
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(doRender);
+}
+
+function doRender() {
+  rafId = null;
+  const {image,chars,pixelSize,colorMode,inverted,brightness,contrast,font,bold,edgeDetection,fgColor,bgColor} = S;
+  if(!image||!chars.length) return;
+
+  showProcessing(true);
+  const t0 = performance.now();
+
+  // Process source image
+  const maxDim = 2400;
+  let srcW = image.naturalWidth, srcH = image.naturalHeight;
+  let scale = 1;
+  if(srcW>maxDim||srcH>maxDim) {
+    scale = Math.min(maxDim/srcW, maxDim/srcH);
+    srcW = Math.floor(srcW*scale);
+    srcH = Math.floor(srcH*scale);
+  }
+
+  const src = document.createElement('canvas');
+  src.width = srcW; src.height = srcH;
+  const sCtx = src.getContext('2d');
+  sCtx.filter = `brightness(${100+parseInt(brightness)}%) contrast(${100+parseInt(contrast)}%)`;
+  sCtx.drawImage(image, 0,0, srcW,srcH);
+
+  const imgData = sCtx.getImageData(0,0,srcW,srcH);
+  const pxData = imgData.data;
+
+  // Optionally compute edge magnitudes
+  let edgeMag = edgeDetection ? sobelFilter(pxData,srcW,srcH) : null;
+
+  // Measure character width
+  const out = document.getElementById('outputCanvas');
+  const ctx = out.getContext('2d');
+  const fontStr = (bold?'bold ':'')+pixelSize+'px "'+font+'", monospace';
+  ctx.font = fontStr;
+  const charW = ctx.measureText('M').width;
+  const charH = pixelSize;
+
+  const cols = Math.max(1, Math.floor(srcW/pixelSize));
+  const rows = Math.max(1, Math.floor(srcH/pixelSize));
+
+  out.width  = Math.ceil(cols*charW);
+  out.height = rows*charH;
+
+  // Re-set after resize (canvas reset clears context)
+  ctx.font = fontStr;
+  ctx.textBaseline = 'top';
+
+  // Background
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0,0,out.width,out.height);
+
+  const charSet = inverted ? [...chars].reverse().join('') : chars;
+  const cLen = charSet.length;
+
+  for(let row=0; row<rows; row++) {
+    for(let col=0; col<cols; col++) {
+      const sx=col*pixelSize, sy=row*pixelSize;
+      let r=0,g=0,b=0,count=0,eSum=0;
+
+      for(let dy=0; dy<pixelSize; dy++) {
+        for(let dx=0; dx<pixelSize; dx++) {
+          const nx=sx+dx, ny=sy+dy;
+          if(nx>=srcW||ny>=srcH) continue;
+          const pi=ny*srcW+nx, idx=pi*4;
+          r+=pxData[idx]; g+=pxData[idx+1]; b+=pxData[idx+2];
+          if(edgeMag) eSum+=edgeMag[pi];
+          count++;
+        }
+      }
+      if(!count) continue;
+      r=r/count|0; g=g/count|0; b=b/count|0;
+
+      const lum = edgeMag ? eSum/count : 0.299*r+0.587*g+0.114*b;
+      const ci  = Math.min(Math.floor(lum/255*(cLen-1)), cLen-1);
+      const ch  = charSet[Math.max(0,ci)];
+
+      ctx.fillStyle = colorMode==='original' ? `rgb(${r},${g},${b})`
+                    : colorMode==='neon'     ? fgColor
+                    :                          '#ffffff';
+      ctx.fillText(ch, col*charW, row*charH);
+    }
+  }
+
+  const elapsed = Math.round(performance.now()-t0);
+  rendered = true;
+
+  // Update stats
+  document.getElementById('statCols').textContent = cols;
+  document.getElementById('statRows').textContent = rows;
+  document.getElementById('statChars').textContent = (cols*rows).toLocaleString();
+  document.getElementById('statMs').textContent = elapsed;
+
+  setStatus(`RENDERED — ${cols}×${rows} characters · ${out.width}×${out.height}px output`, `${elapsed}ms`);
+  showProcessing(false);
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+document.getElementById('copyBtn').onclick = copyText;
+document.getElementById('downloadPNGBtn').onclick = () => downloadCanvas('png');
+document.getElementById('downloadJPGBtn').onclick = () => downloadCanvas('jpg');
+
+function copyText() {
+  const {image,chars,pixelSize,inverted,brightness,contrast,edgeDetection} = S;
+  if(!image) return;
+
+  const srcW = image.naturalWidth, srcH = image.naturalHeight;
+  const off = document.createElement('canvas');
+  off.width=srcW; off.height=srcH;
+  const offCtx = off.getContext('2d');
+  offCtx.filter = `brightness(${100+parseInt(brightness)}%) contrast(${100+parseInt(contrast)}%)`;
+  offCtx.drawImage(image,0,0);
+  const d = offCtx.getImageData(0,0,srcW,srcH).data;
+  const em = edgeDetection ? sobelFilter(d,srcW,srcH) : null;
+
+  const cols=Math.floor(srcW/pixelSize), rows=Math.floor(srcH/pixelSize);
+  const charSet = inverted?[...chars].reverse().join(''):chars;
+  const cLen=charSet.length;
+  const lines=[];
+
+  for(let row=0;row<rows;row++){
+    let line='';
+    for(let col=0;col<cols;col++){
+      const sx=col*pixelSize,sy=row*pixelSize;
+      let lum=0,eSum=0,count=0;
+      for(let dy=0;dy<pixelSize;dy++){for(let dx=0;dx<pixelSize;dx++){
+        const nx=sx+dx,ny=sy+dy;
+        if(nx>=srcW||ny>=srcH) continue;
+        const pi=ny*srcW+nx,idx=pi*4;
+        lum+=0.299*d[idx]+0.587*d[idx+1]+0.114*d[idx+2];
+        if(em) eSum+=em[pi]; count++;
+      }}
+      const avg = em?(eSum/count):(lum/count);
+      const ci = Math.min(Math.floor(avg/255*(cLen-1)),cLen-1);
+      line+=charSet[Math.max(0,ci)];
+    }
+    lines.push(line);
+  }
+
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    showFlash('TEXT COPIED!');
+    setStatus('COPIED — ' + lines.length + ' lines to clipboard');
+  }).catch(()=>{
+    setStatus('ERROR — Clipboard access denied');
+  });
+}
+
+function downloadCanvas(fmt) {
+  const out = document.getElementById('outputCanvas');
+  if(!out.width) return;
+  const mimeType = fmt==='jpg'?'image/jpeg':'image/png';
+  const quality = fmt==='jpg'?0.95:undefined;
+  const link = document.createElement('a');
+  link.download = 'ascii-forge.' + fmt;
+  link.href = out.toDataURL(mimeType, quality);
+  link.click();
+  showFlash('DOWNLOADED!');
+}
+
+// ─── MOBILE SIDEBAR ──────────────────────────────────────────────────────────
+document.getElementById('controlsBtn').onclick = openSidebar;
+document.getElementById('sidebarHandle').onclick = closeSidebar;
+
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('backdrop').style.display='block';
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('backdrop').style.display='none';
+}
+
+// ─── UI HELPERS ──────────────────────────────────────────────────────────────
+function setStatus(msg, right) {
+  document.getElementById('statusText').textContent = msg;
+  if(right!==undefined) document.getElementById('statusRight').textContent = right;
+}
+
+function showProcessing(on) {
+  document.getElementById('processingBar').style.display = on?'block':'none';
+  document.getElementById('statusDot').style.animationPlayState = on?'running':'running';
+}
+
+function showFlash(msg) {
+  const existing = document.querySelector('.flash');
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.className='flash'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2100);
+}
+
+// ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if((e.ctrlKey||e.metaKey)&&e.key==='s') { e.preventDefault(); downloadCanvas('png'); }
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key==='C') { e.preventDefault(); copyText(); }
+});
+
+// ─── FONT READY ──────────────────────────────────────────────────────────────
+document.fonts.ready.then(() => {
+  if(S.image) scheduleRender();
+});
+
+// ─── INITIAL STATUS ──────────────────────────────────────────────────────────
+setStatus('READY — Upload or drag an image, or paste from clipboard (Ctrl+V)');
+</script>
+</body>
+</html>
