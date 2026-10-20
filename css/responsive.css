@@ -1,0 +1,458 @@
+@media (max-width: 1180px) {
+  :root {
+    --sidebar-width: 324px;
+  }
+
+  .header-signal {
+    display: none;
+  }
+}
+
+@media (max-width: 1020px) {
+  :root {
+    --sidebar-width: 306px;
+  }
+
+  .tool-label {
+    display: none;
+  }
+
+  .tool-btn {
+    width: 30px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  :root {
+    --header-height: 54px;
+    --status-height: 28px;
+  }
+
+  .mobile-only {
+    display: inline-flex !important;
+  }
+
+  .app-header {
+    gap: 12px;
+    padding: 0 12px;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
+
+  .brand-name {
+    font-size: 12px;
+  }
+
+  .brand-sub {
+    font-size: 6px;
+    letter-spacing: 0.18em;
+  }
+
+  .main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    z-index: 100;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: none;
+    width: 100%;
+    max-height: 82dvh;
+    border-top: 1px solid var(--line-strong);
+    border-left: 0;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 -24px 70px rgba(0, 0, 0, 0.72);
+    animation: sheet-in 200ms var(--ease);
+  }
+
+  .sidebar.is-open {
+    display: flex;
+  }
+
+  .sidebar-handle {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    height: 18px;
+    cursor: grab;
+  }
+
+  .sidebar-handle span {
+    width: 34px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--line-strong);
+  }
+
+  .backdrop:not([hidden]) {
+    display: block;
+  }
+
+  @keyframes sheet-in {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .stats-strip {
+    order: 0;
+  }
+
+  .panel-tabs {
+    order: 1;
+  }
+
+  .sidebar-scroll {
+    order: 2;
+  }
+
+  .workspace-toolbar {
+    gap: 7px;
+    padding: 0 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .workspace-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .tool-label {
+    display: inline;
+  }
+
+  .tool-btn {
+    width: auto;
+    padding: 0 8px;
+  }
+
+  .grid-badge {
+    display: none;
+  }
+
+  .stage {
+    padding: 16px;
+  }
+
+  .workspace-footer {
+    padding: 0 10px;
+  }
+
+  .workspace-footer .footer-meta {
+    max-width: 70%;
+  }
+
+  .workspace-footer .output-info {
+    max-width: 42vw;
+  }
+
+  .text-toolbar {
+    gap: 10px;
+    padding: 6px 10px;
+  }
+
+  .text-honesty {
+    display: none;
+  }
+
+  .text-toolbar .btn {
+    margin-left: auto;
+  }
+
+  .edit-toolbar {
+    padding: 6px 10px;
+  }
+
+  .edit-hint {
+    display: none;
+  }
+
+  .toast-region {
+    right: 12px;
+    bottom: calc(var(--status-height) + 10px);
+  }
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0 10px;
+  }
+
+  .brand-copy {
+    max-width: 150px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-actions .btn {
+    padding: 0 9px;
+  }
+
+  .workspace-toolbar {
+    min-height: 45px;
+    padding: 0 7px;
+  }
+
+  .seg-btn {
+    padding: 0 7px;
+  }
+
+  .seg-btn .icon {
+    display: none;
+  }
+
+  .tool-label {
+    display: none;
+  }
+
+  .tool-btn {
+    width: 29px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .stage {
+    padding: 12px;
+  }
+
+  .drop-zone {
+    min-height: 300px;
+    padding: 28px 18px;
+  }
+
+  .drop-title {
+    font-size: 15px;
+  }
+
+  .drop-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 16px;
+  }
+
+  .drop-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .drop-copy {
+    font-size: 8px;
+  }
+
+  .drop-hint {
+    font-size: 8px;
+  }
+
+  .workspace-footer {
+    font-size: 8px;
+  }
+
+  .workspace-footer .file-dims {
+    display: none;
+  }
+
+  .workspace-footer .footer-meta {
+    max-width: 64%;
+  }
+
+  .workspace-footer .output-info {
+    max-width: 36vw;
+  }
+
+  .status-right {
+    display: none;
+  }
+
+  .statusbar {
+    padding: 0 10px;
+    font-size: 8px;
+  }
+
+  .edit-toolbar {
+    gap: 8px;
+  }
+
+  .edit-mode-label {
+    font-size: 6.5px;
+  }
+
+  .edit-count {
+    margin-left: auto;
+  }
+
+  .text-toolbar {
+    gap: 8px;
+  }
+
+  .inline-control input[type="range"] {
+    width: 56px;
+  }
+
+  .panel-section {
+    padding: 14px;
+  }
+
+  .modal-card {
+    padding: 17px;
+  }
+
+  .shortcut-list > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .shortcut-list dd {
+    text-align: left;
+  }
+
+  .compare-label {
+    top: 7px;
+    padding: 3px 5px;
+    font-size: 6px;
+  }
+
+  .compare-label--left {
+    left: 7px;
+  }
+
+  .compare-label--right {
+    right: 7px;
+  }
+
+  .compare-handle {
+    width: 28px;
+    height: 36px;
+  }
+
+  .text-preview {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 460px) {
+  .brand-copy {
+    display: none;
+  }
+
+  .header-actions .btn span {
+    font-size: 8px;
+  }
+
+  .workspace-toolbar .segmented {
+    flex: 0 0 auto;
+  }
+
+  .toolbar-group {
+    flex: 0 0 auto;
+  }
+
+  .text-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .text-toolbar .btn span {
+    display: none;
+  }
+
+  .text-toolbar .btn {
+    width: 31px;
+    padding: 0;
+  }
+
+  .inline-control {
+    flex: 0 0 auto;
+  }
+
+  .color-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-tab {
+    font-size: 7px;
+  }
+
+  .stat {
+    height: 47px;
+  }
+
+  .stat-value {
+    font-size: 10px;
+  }
+
+  .drop-eyebrow {
+    font-size: 6px;
+  }
+
+  .drop-hint kbd {
+    display: none;
+  }
+
+  .workspace-footer .footer-meta {
+    max-width: 100%;
+  }
+
+  .workspace-footer .footer-meta--right {
+    display: none;
+  }
+
+  .edit-toolbar .brush-field span {
+    display: none;
+  }
+}
+
+@media (max-height: 660px) and (min-width: 861px) {
+  .stats-strip {
+    display: none;
+  }
+
+  .panel-section {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .drop-zone {
+    min-height: 250px;
+  }
+}
+
+@media (hover: none) {
+  .range-head label,
+  .switch-copy {
+    font-size: 10px;
+  }
+
+  .switch-copy small {
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

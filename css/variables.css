@@ -1,0 +1,71 @@
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("../assets/fonts/jetbrains-mono-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Orbitron";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("../assets/fonts/orbitron-latin.woff2") format("woff2");
+}
+
+:root {
+  --bg-void: #020305;
+  --bg-root: #04060a;
+  --bg-panel: #070a10;
+  --bg-raised: #0a0e16;
+  --bg-input: #0a0f18;
+  --bg-hover: #101725;
+
+  --line: #151d2a;
+  --line-strong: #233047;
+  --line-focus: #35536a;
+
+  --text: #c9d4e7;
+  --text-strong: #edf4ff;
+  --text-muted: #7d89a4;
+  --text-dim: #4f5c76;
+
+  --neon: #00ff94;
+  --neon-rgb: 0, 255, 148;
+  --neon-soft: rgba(0, 255, 148, 0.11);
+  --neon-line: rgba(0, 255, 148, 0.38);
+
+  --cyan: #2bd5ff;
+  --cyan-rgb: 43, 213, 255;
+  --cyan-soft: rgba(43, 213, 255, 0.1);
+
+  --magenta: #ff4fd8;
+  --magenta-soft: rgba(255, 79, 216, 0.1);
+
+  --amber: #ffb443;
+  --danger: #ff4d69;
+  --danger-soft: rgba(255, 77, 105, 0.09);
+  --success: #52ffa8;
+  --warning: #ffcc66;
+
+  --font-mono: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", "Liberation Mono", Menlo, Consolas, monospace;
+  --font-display: "Orbitron", "JetBrains Mono", monospace;
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 9px;
+
+  --header-height: 58px;
+  --status-height: 30px;
+  --sidebar-width: 344px;
+  --toolbar-height: 48px;
+  --footer-height: 30px;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.25, 1);
+  --speed: 150ms;
+
+  --glow-neon: 0 0 18px rgba(0, 255, 148, 0.25);
+  --shadow-panel: 0 20px 70px rgba(0, 0, 0, 0.55);
+}

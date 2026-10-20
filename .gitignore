@@ -1,0 +1,20 @@
+# Operating system junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and tooling state
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local dependencies and build output (this project has neither by default)
+node_modules/
+dist/
+coverage/
+
+# Local test output and temporary files
+tests/output/
+*.log
