@@ -22,6 +22,7 @@ import {
 } from "./ascii-engine.js";
 import {
   applyTextPreviewStyle,
+  getFontCellAspect,
   paintCell as paintCanvasCell,
   renderCanvas,
   renderTextPreview,
@@ -120,6 +121,10 @@ function getProcessedImage() {
   return processed;
 }
 
+function currentCellAspect() {
+  return getFontCellAspect(state.settings, { charset: state.settings.charset });
+}
+
 function scheduleRender({ grid = false, reprocess = false, debounce = 45 } = {}) {
   if (!state.image) {
     ui.setProcessing(false);
@@ -178,7 +183,9 @@ function flushRender() {
     if (state.dirty.grid || !state.grid) {
       const processed = getProcessedImage();
       const previousGrid = state.grid;
-      const nextGrid = generateAsciiGrid(processed, state.settings);
+      const nextGrid = generateAsciiGrid(processed, state.settings, {
+        cellAspect: currentCellAspect(),
+      });
 
       if (state.edits.size) {
         if (
@@ -1089,7 +1096,7 @@ function loadSelectedFont() {
   const weight = state.settings.bold ? 700 : 400;
   const spec = `${weight} 16px "${state.settings.font}"`;
   document.fonts.load(spec).then(() => {
-    if (state.image && state.grid) scheduleRender({ debounce: 0 });
+    if (state.image) scheduleRender({ grid: true, debounce: 0 });
   }).catch(() => {});
 }
 
@@ -1235,14 +1242,14 @@ function bindControls() {
   els.boldToggle.addEventListener("change", () => {
     updateSettings({ bold: els.boldToggle.checked });
     applyTextPreviewStyle(els.textPreview, state.settings);
-    scheduleRender({ debounce: 0 });
+    scheduleRender({ grid: true, debounce: 0 });
     loadSelectedFont();
   });
 
   els.fontSelect.addEventListener("change", () => {
     updateSettings({ font: els.fontSelect.value });
     applyTextPreviewStyle(els.textPreview, state.settings);
-    scheduleRender({ debounce: 0 });
+    scheduleRender({ grid: true, debounce: 0 });
     loadSelectedFont();
   });
 
@@ -1410,7 +1417,7 @@ function init() {
   primeFonts();
 
   document.fonts.ready.then(() => {
-    if (state.image) scheduleRender({ debounce: 0 });
+    if (state.image) scheduleRender({ grid: true, debounce: 0 });
   }).catch(() => {});
 
   if (warning) {

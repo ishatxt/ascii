@@ -2,13 +2,47 @@ import { FONTS } from "./state.js";
 import { gridToText } from "./ascii-engine.js";
 import { contrastTextColor, packedToHex } from "./image-processing.js";
 
+const DEFAULT_CELL_ASPECT = 0.6;
+const MEASURE_FONT_SIZE = 16;
+
 export function getFontStack(fontId) {
   return FONTS.find((font) => font.id === fontId)?.stack ?? FONTS[0].stack;
 }
 
-function fontSpecFor(grid, settings, fontSize) {
+function fontSpecFor(settings, fontSize) {
   const weight = settings.bold ? 700 : 400;
   return `${weight} ${fontSize}px ${getFontStack(settings.font)}`;
+}
+
+function measureCharWidth(context, fontSize, charset = "") {
+  const sampleCharacters = new Set(["M", "W", "█", ...Array.from(charset || " ")]);
+  let charWidth = context.measureText("M").width || fontSize * DEFAULT_CELL_ASPECT;
+  for (const character of sampleCharacters) {
+    const measured = context.measureText(character).width;
+    if (measured > charWidth) charWidth = measured;
+  }
+  return Math.max(1, Math.ceil(charWidth * 100) / 100);
+}
+
+/**
+ * Return the selected font's character-cell aspect ratio (advance width
+ * divided by line height). Grid generation uses this so the number of rows
+ * compensates for monospace glyphs being taller than they are wide.
+ */
+export function getFontCellAspect(settings, {
+  fontSize = MEASURE_FONT_SIZE,
+  charset = settings?.charset || "",
+} = {}) {
+  if (typeof document === "undefined") return DEFAULT_CELL_ASPECT;
+
+  const size = Math.max(1, Number(fontSize) || MEASURE_FONT_SIZE);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) return DEFAULT_CELL_ASPECT;
+
+  context.font = fontSpecFor(settings, size);
+  const charWidth = measureCharWidth(context, size, charset);
+  return charWidth / size;
 }
 
 function cellColor(grid, index) {
@@ -31,18 +65,20 @@ export function renderCanvas(grid, settings, canvas, options = {}) {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("A 2D canvas context is unavailable in this browser.");
 
-  const fontSize = Math.max(5, Math.min(48, grid.blockSize));
-  const spec = fontSpecFor(grid, settings, fontSize);
+  // Each character represents a source cell of `cellWidth` x `cellHeight`.
+  // Choose a font size whose advance width matches that cell width, and use
+  // the matching line height, so the internal canvas keeps the source's
+  // proportions instead of being squashed by narrow monospace glyphs.
+  const cellAspect = getFontCellAspect(settings, { charset: grid.charset });
+  const sourceCellWidth = grid.workWidth && grid.cols
+    ? grid.workWidth / grid.cols
+    : Math.max(1, grid.blockSize);
+  const fontSize = Math.max(1, Math.min(512, sourceCellWidth / cellAspect));
+  const spec = fontSpecFor(settings, fontSize);
   applyFont(context, spec);
 
-  const sampleCharacters = new Set(["M", "W", "█", ...Array.from(grid.charset || " ")]);
-  let charWidth = context.measureText("M").width || fontSize * 0.6;
-  for (const character of sampleCharacters) {
-    const measured = context.measureText(character).width;
-    if (measured > charWidth) charWidth = measured;
-  }
-  charWidth = Math.max(1, Math.ceil(charWidth * 100) / 100);
-  const lineHeight = Math.ceil(fontSize);
+  const charWidth = measureCharWidth(context, fontSize, grid.charset);
+  const lineHeight = fontSize;
 
   const width = Math.max(1, Math.ceil(grid.cols * charWidth));
   const height = Math.max(1, Math.ceil(grid.rows * lineHeight));

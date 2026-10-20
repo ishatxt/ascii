@@ -61,13 +61,13 @@ Check these once after deployment:
 
 1. **Upload** with the button, drag an image onto the stage, or press <kbd>Ctrl</kbd>+<kbd>V</kbd> to paste.
 2. Choose a **character preset** or type a custom character set. The first glyph represents the darkest pixels and the last represents the brightest.
-3. Adjust **resolution** with the pixel-block slider (2 px = more detail, 40 px = chunkier).
+3. Adjust **resolution** with the pixel-block slider (2 px = more detail, 40 px = chunkier). The grid compensates for the selected font's character-cell geometry, so the artwork keeps the source image's proportions.
 4. Refine the image with **brightness**, **contrast**, **invert**, and **Sobel edge detection**.
 5. Pick a **color mode** and adjust colors and typography in the **Style** panel.
 6. Use **Compare** to check the source, or **Edit** to paint and erase characters.
 7. Copy the text or download an export from the **Export** panel.
 
-The footer reports the source name and dimensions; the statistics strip reports the actual columns, rows, character count, and conversion time. If a requested resolution would exceed the grid limits, the app caps it and reports the effective grid instead of freezing the browser.
+The footer reports the source name and dimensions; the statistics strip reports the actual columns, rows, character count, and conversion time. Source dimensions are kept as metadata and are never replaced by the ASCII grid size. If a requested resolution would exceed the grid limits, the app caps it and reports the effective grid instead of freezing the browser.
 
 ### Built-in presets
 
@@ -128,7 +128,7 @@ When the comparison handle has focus, <kbd>Home</kbd> and <kbd>End</kbd> jump to
 
 The canvas, text view, clipboard copy, and every text-based export are built from the same ASCII grid. Character edits and same-size regenerations therefore stay consistent across all outputs.
 
-PNG and JPG render at the canvas's internal resolution, which is based on the effective block size and font metrics. Very large grids can produce very large canvases; if the browser cannot allocate or encode one, the app reports the failure instead of downloading an empty file.
+PNG and JPG render at the canvas's internal resolution, which is based on the work image, the effective block size, and font metrics. The canvas keeps the source proportions while its CSS display size is fitted separately to the preview area. Very large grids can produce very large canvases; if the browser cannot allocate or encode one, the app reports the failure instead of downloading an empty file.
 
 ## Custom presets
 
@@ -198,7 +198,7 @@ File/drop/paste
 Image object
     ↓  scale to at most 1600 px on the long edge
 Preprocessed pixel buffer (brightness, contrast, Sobel)
-    ↓  sample blocks and map luminance to glyphs
+    ↓  sample font-aware character cells and map luminance to glyphs
 state.grid  ← manual edits live alongside it
     ↓
 canvas · text view · clipboard · TXT · SVG · HTML · ANSI

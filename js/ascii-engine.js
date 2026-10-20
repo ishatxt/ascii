@@ -9,33 +9,90 @@ import {
 
 const ALPHA_BLANK_THRESHOLD = 12;
 const MONO_COLOR = "#f2f6ff";
+const DEFAULT_CELL_ASPECT = 0.6;
 const TERMINAL_SHADES = ["#00ff94", "#00d16e", "#009d4f", "#006934"].map((hex) => packRgb(hexToRgb(hex)));
 const AMBER_SHADES = ["#ffd37a", "#ffb443", "#d98616", "#925200"].map((hex) => packRgb(hexToRgb(hex)));
 
-export function resolveGridDimensions(width, height, requestedBlockSize) {
+/**
+ * Build a grid whose rendered character cells keep the source proportions.
+ * `cellAspect` is the selected font's character advance divided by its line
+ * height. Monospace glyphs are taller than they are wide, so a square source
+ * region cannot be represented by a square character cell.
+ */
+function gridDimensionsForBlock(width, height, blockSize, cellAspect) {
+  let cols = Math.max(1, Math.round(width / blockSize));
+  let rows = Math.max(1, Math.round(cols * (height / width) * cellAspect));
+
+  // Rebalance columns after the integer row rounding so the character grid
+  // keeps the source aspect ratio instead of accumulating distortion.
+  const balancedCols = Math.max(1, Math.round(rows * (width / height) / cellAspect));
+  if (balancedCols <= LIMITS.MAX_GRID_COLS) cols = balancedCols;
+
+  return {
+    cols: Math.min(width, cols),
+    rows: Math.min(height, rows),
+  };
+}
+
+export function resolveGridDimensions(width, height, requestedBlockSize, cellAspect = DEFAULT_CELL_ASPECT) {
   const desired = clamp(
     Math.round(Number(requestedBlockSize) || 10),
     LIMITS.MIN_BLOCK_SIZE,
     LIMITS.MAX_BLOCK_SIZE,
   );
+  const numericAspect = Number(cellAspect);
+  const aspect = clamp(
+    Number.isFinite(numericAspect) && numericAspect > 0 ? numericAspect : DEFAULT_CELL_ASPECT,
+    0.1,
+    4,
+  );
   let blockSize = desired;
-  let cols = 1;
-  let rows = 1;
+  let previousCols = -1;
+  let previousRows = -1;
 
   for (let guard = 0; guard < 1000; guard += 1) {
-    cols = Math.max(1, Math.floor(width / blockSize));
-    rows = Math.max(1, Math.floor(height / blockSize));
-    if (
-      cols <= LIMITS.MAX_GRID_COLS
+    const { cols, rows } = gridDimensionsForBlock(width, height, blockSize, aspect);
+    const withinLimits = cols <= LIMITS.MAX_GRID_COLS
       && rows <= LIMITS.MAX_GRID_ROWS
-      && cols * rows <= LIMITS.MAX_GRID_CELLS
-    ) {
-      return { cols, rows, blockSize, capped: blockSize !== desired };
+      && cols * rows <= LIMITS.MAX_GRID_CELLS;
+
+    if (withinLimits) {
+      return {
+        cols,
+        rows,
+        blockSize,
+        cellAspect: aspect,
+        cellWidth: width / cols,
+        cellHeight: height / rows,
+        capped: blockSize !== desired,
+      };
     }
+
+    // Some extreme aspect ratios cannot be improved by increasing the block
+    // size (for example a one-column image). Stop rather than looping forever.
+    if (cols === previousCols && rows === previousRows) break;
+    previousCols = cols;
+    previousRows = rows;
     blockSize += 1;
   }
 
-  throw new Error("Could not resolve a safe ASCII grid for this image.");
+  // Safety fallback for pathological images: clamp to the published limits.
+  const { cols, rows } = gridDimensionsForBlock(width, height, blockSize, aspect);
+  const safeCols = Math.max(1, Math.min(cols, LIMITS.MAX_GRID_COLS, width));
+  const safeRows = Math.max(
+    1,
+    Math.min(rows, LIMITS.MAX_GRID_ROWS, height, Math.floor(LIMITS.MAX_GRID_CELLS / safeCols)),
+  );
+
+  return {
+    cols: safeCols,
+    rows: safeRows,
+    blockSize,
+    cellAspect: aspect,
+    cellWidth: width / safeCols,
+    cellHeight: height / safeRows,
+    capped: true,
+  };
 }
 
 export function getCharacterSet(settings) {
@@ -80,7 +137,8 @@ function colorForCell(mode, settings, averages) {
   }
 }
 
-export function generateAsciiGrid(processed, settings) {
+export function generateAsciiGrid(processed, settings, options = {}) {
+  const { cellAspect = DEFAULT_CELL_ASPECT } = options || {};
   const started = performance.now();
   const { width, height, data, gray, edge } = processed;
 
@@ -88,7 +146,15 @@ export function generateAsciiGrid(processed, settings) {
     throw new Error("Cannot generate ASCII art from an empty image.");
   }
 
-  const { cols, rows, blockSize, capped } = resolveGridDimensions(width, height, settings.blockSize);
+  const {
+    cols,
+    rows,
+    blockSize,
+    cellAspect: resolvedAspect,
+    cellWidth,
+    cellHeight,
+    capped,
+  } = resolveGridDimensions(width, height, settings.blockSize, cellAspect);
   const characters = getCharacterSet(settings);
   const characterCount = characters.length;
   const mode = COLOR_MODE_MAP[settings.colorMode] ? settings.colorMode : "neon";
@@ -102,14 +168,25 @@ export function generateAsciiGrid(processed, settings) {
   const colors = isFlat ? null : new Uint32Array(cols * rows);
   let nonSpace = 0;
 
+  // Sample the full source edge-to-edge. Cell boundaries are derived from the
+  // grid dimensions so the last row/column never leaves a missing strip.
+  const columnEdges = new Array(cols + 1);
+  for (let col = 0; col <= cols; col += 1) {
+    columnEdges[col] = Math.floor((col * width) / cols);
+  }
+  const rowEdges = new Array(rows + 1);
+  for (let row = 0; row <= rows; row += 1) {
+    rowEdges[row] = Math.floor((row * height) / rows);
+  }
+
   for (let row = 0; row < rows; row += 1) {
-    const yStart = row * blockSize;
-    const yEnd = Math.min(yStart + blockSize, height);
+    const yStart = rowEdges[row];
+    const yEnd = Math.max(yStart + 1, rowEdges[row + 1]);
     const cellRow = row * cols;
 
     for (let col = 0; col < cols; col += 1) {
-      const xStart = col * blockSize;
-      const xEnd = Math.min(xStart + blockSize, width);
+      const xStart = columnEdges[col];
+      const xEnd = Math.max(xStart + 1, columnEdges[col + 1]);
       let rSum = 0;
       let gSum = 0;
       let bSum = 0;
@@ -190,6 +267,11 @@ export function generateAsciiGrid(processed, settings) {
     bold: settings.bold,
     blockSize,
     requestedBlockSize: settings.blockSize,
+    cellAspect: resolvedAspect,
+    cellWidth,
+    cellHeight,
+    aspectRatio: width / height,
+    sourceAspectRatio: processed.sourceWidth / processed.sourceHeight,
     capped,
     sourceWidth: processed.sourceWidth,
     sourceHeight: processed.sourceHeight,

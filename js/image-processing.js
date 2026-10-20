@@ -198,6 +198,7 @@ export function processImage(imageElement, settings) {
     height,
     sourceWidth,
     sourceHeight,
+    sourceAspectRatio: sourceWidth / sourceHeight,
     scale,
     data,
     gray,
